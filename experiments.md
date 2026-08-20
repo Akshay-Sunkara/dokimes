@@ -136,3 +136,20 @@ longer, 101s to 122s median, and timeouts stayed flat at 3, so the agent did
 spend more of its budget; it just did not convert that into more tasks passed.
 telling it to check more is apparently not the same as it checking the right
 thing.
+
+## where this ended up
+
+seven cycles, two kept. 6.7% -> 53.3% on the train sample.
+
+what survived is the numbered element map from cycle 1 and the model swap from
+cycle 5. what did not: end-of-run requirement checking, action change-reporting
+(twice, on both models), the typing fix, and the finishing protocol.
+
+three of those five discards had positive point estimates between +3% and +10%
+that the interval could not separate from zero. at 30 tasks and one run each the
+95% interval is roughly ±13% wide, so that whole band is invisible from here —
+i cannot tell a real +8% change from nothing, and i discarded several changes i
+still think are real. the typing fix in cycle 4 is the one i would look at first
+with more runs behind it: a field already at its maxlength silently swallows
+every keystroke, which i watched happen by hand on thumbtack, and it is still
+unfixed on this branch because the sweep could not prove it.
