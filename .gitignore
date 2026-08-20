@@ -14,3 +14,4 @@ eval/results.jsonl.tmp
 # autoresearch loop artifacts
 run.log
 ledger.tsv
+sweeps/
