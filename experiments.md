@@ -25,3 +25,21 @@ for a grounded screenshot and finds images add almost nothing over text — whic
 matched what the traces looked like.
 result: +20.0% [+3.3%, +36.7%], 6.7% -> 26.7% — kept. timeouts fell from 15 runs
 to 7 and the median run went from 296s to 176s.
+
+## cycle 2 — i made the agent write down what the page must show, and check it
+
+most of what was left after cycle 1 was the judge saying the final answer was
+fabricated or never verified — filters that silently reset, a search that kept
+its default city, a list of apartments nobody had read off the page. so i added
+`plan()`, where the agent commits up front to the literal strings the finished
+page will contain, and `check()`, which greps the live page for each one and
+prints MISSING when it isn't there.
+
+source: arxiv:2607.24167 (falsifiable commitment planning), which has the agent
+commit to confirming and falsifying evidence per step, and arxiv:2504.01382,
+whose judge scores a run against key points extracted from the task — i pointed
+the same idea at the agent instead of at the judge.
+result: -3.3% [-10.0%, +0.0%] against cycle 1 — discarded. it used plan() and
+check() in 19 of the 30 runs, so it wasn't ignored; it just didn't convert.
+check() told the agent a filter was missing and the agent still couldn't apply
+it, which says the bottleneck is applying the filter, not noticing it failed.
