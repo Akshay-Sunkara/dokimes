@@ -101,3 +101,21 @@ moved the agent from 6.7% to somewhere around 27-37%, and one line moved it
 another 27 points. the two are not in competition — sonnet is running on the
 element map from cycle 1 — but a better model was the largest single thing
 available, and i had been spending cycles on smaller ones.
+
+## cycle 6 — i tried the action-reporting change again, on sonnet
+
+cycle 3 bundled action-reporting with the typing fix and the interval could not
+separate it from zero on haiku, so i brought the whole thing back on top of
+sonnet to see whether a model that actually reads its tool output would get more
+out of it. i picked the compass run to justify it: the agent clicked "Price",
+wrote "with ascending sort already applied", and stopped — 21 steps and 66
+seconds into a 300 second budget — without ever confirming the sort took.
+
+source: browser-use/browser-use tools/service.py again, same read-back idea as
+cycle 3.
+result: +0.0% [-16.7%, +16.7%] against cycle 5 — discarded, and this one is a
+clean no rather than an underpowered maybe. sonnet was already ending almost
+every action with its own page_map() call, so folding the observation into the
+action gave it something it was already going and getting. the thing i actually
+wanted to fix — it stops before confirming the effect — is not an observation
+problem, it is a stopping problem.
