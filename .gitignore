@@ -1,0 +1,16 @@
+.venv/
+__pycache__/
+*.pyc
+
+runs.db
+
+run_*.jsonl
+
+.env
+eval/traces/run-*
+eval/results.jsonl
+eval/results.jsonl.tmp
+
+# autoresearch loop artifacts
+run.log
+ledger.tsv

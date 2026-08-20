@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "deny": [
+      "Edit(eval/judge.py)",
+      "Write(eval/judge.py)",
+      "Edit(eval/report.py)",
+      "Write(eval/report.py)",
+      "Edit(eval/mind2web.jsonl)",
+      "Write(eval/mind2web.jsonl)",
+      "Edit(eval/results.jsonl)",
+      "Write(eval/results.jsonl)",
+      "Edit(eval/eval.py)",
+      "Write(eval/eval.py)",
+      "Edit(.claude/settings.json)",
+      "Write(.claude/settings.json)"
+    ],
+    "allow": [
+      "Bash(.venv/bin/python -m eval:*)",
+      "Bash(.venv/bin/python -m eval.judge:*)",
+      "Bash(.venv/bin/python -m eval.traces:*)",
+      "Bash(.venv/bin/python -m eval.report:*)",
+      "Bash(git diff:*)",
+      "Bash(git status:*)",
+      "Bash(git stash:*)"
+    ]
+  }
+}
