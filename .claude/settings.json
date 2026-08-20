@@ -21,6 +21,7 @@
     ],
     "allow": [
       "Bash(.venv/bin/python -m eval:*)",
+      "Bash(.venv/bin/python parallel.py:*)",
       "Bash(.venv/bin/python -m eval.judge:*)",
       "Bash(.venv/bin/python -m eval.traces:*)",
       "Bash(.venv/bin/python -m eval.report:*)",
