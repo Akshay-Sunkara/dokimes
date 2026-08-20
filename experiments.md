@@ -64,3 +64,19 @@ result: +6.7% [-10.0%, +23.3%] against cycle 1, 26.7% -> 33.3% — discarded, th
 ci spans zero. i think the typing fix in here is real and the change-reporting is
 what cost the steps, so i am going to try them separately rather than keep a
 bundle the eval cannot resolve.
+
+## cycle 4 — i shipped the typing fix on its own
+
+cycle 3 bundled two things, so i split it and re-ran just the part i had watched
+fail by hand: fill_index now selects whatever the field holds before typing, so
+the insert replaces it instead of being appended to a field that is already at
+its maxlength, and it reads the field back and says what it actually holds.
+
+source: none for the fix itself — i got it from stepping through the thumbtack
+zip box by hand in cycle 3. the read-back that exposed it came from
+browser-use/browser-use's tools/service.py.
+result: +10.0% [-3.3%, +23.3%] against cycle 1, 26.7% -> 36.7% — discarded, the
+ci spans zero again. steps per run dropped from 45 to 38 and timeouts from 7 to
+4, which is what i would expect if the fix is real, but at 30 tasks and one run
+each the interval is about ±13% wide, so nothing smaller than that can be seen
+from here. i am recording it as a discard and taking bigger swings.
