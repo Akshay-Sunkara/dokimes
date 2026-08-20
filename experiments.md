@@ -80,3 +80,24 @@ ci spans zero again. steps per run dropped from 45 to 38 and timeouts from 7 to
 4, which is what i would expect if the fix is real, but at 30 tasks and one run
 each the interval is about ±13% wide, so nothing smaller than that can be seen
 from here. i am recording it as a discard and taking bigger swings.
+
+## cycle 5 — i swapped the model from haiku to sonnet
+
+three cycles in a row i had changes with good point estimates that the interval
+could not separate from zero, so i went for the biggest lever the rules leave me:
+MODEL, which sits right at the top of agent.py. everything else stayed exactly as
+cycle 1 left it.
+
+source: none — this is not an idea from anywhere, it is the one knob i had not
+turned, and i wanted to know how much of what was left is the model rather than
+the scaffolding.
+result: +26.7% [+10.0%, +46.7%] against cycle 1, 26.7% -> 53.3% — kept. it is
+also cheaper per task finished than it looks: 32 steps a run instead of 45, a
+median run of 101s instead of 176s, and 5 timeouts instead of 7. the sweep costs
+about twice as much, $7.56 against $3.94.
+
+it is worth being blunt about what this says. the scaffolding work in cycles 1-4
+moved the agent from 6.7% to somewhere around 27-37%, and one line moved it
+another 27 points. the two are not in competition — sonnet is running on the
+element map from cycle 1 — but a better model was the largest single thing
+available, and i had been spending cycles on smaller ones.

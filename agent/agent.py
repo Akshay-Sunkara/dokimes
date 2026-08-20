@@ -17,7 +17,7 @@ from claude_agent_sdk import (
 from agent.run import run
 from eval.traces import observe
 
-MODEL = "claude-haiku-4-5"
+MODEL = "claude-sonnet-5"
 
 SYSTEM = """
 You control a real Chrome browser by writing Python.
