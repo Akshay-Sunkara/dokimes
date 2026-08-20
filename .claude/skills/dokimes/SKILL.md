@@ -14,10 +14,20 @@ when the paired bootstrap CI excludes zero.
 
 ## Setup (once, at the start)
 
+All work happens on `experiments`. Never commit to `main`.
+
 ```bash
-git status --porcelain                     # must be clean; if not, stop and ask
-git checkout -b dokimes/<short-tag>        # never work on main or dokimes
+git status --porcelain          # must be clean; if not, stop and ask
+
+# resume the branch if it already exists, otherwise start it from main
+git rev-parse --verify experiments >/dev/null 2>&1 \
+  && git checkout experiments \
+  || git checkout -b experiments
 ```
+
+If `experiments` already has cycles on it, read `ledger.tsv` and `git log --oneline
+main..experiments` before planning anything — you are continuing a run, not
+starting one, and repeating an idea already recorded there wastes a cycle.
 
 Create `ledger.tsv` if absent (it is gitignored — it is your memory across cycles):
 
@@ -124,6 +134,17 @@ then discard.
 
 Append the row to `ledger.tsv` either way. Discards are data — they stop you
 retrying the same idea in cycle 14.
+
+**Push only after deciding**, and only on a keep:
+
+```bash
+git push -u origin experiments
+```
+
+Never push before the decision. A discarded cycle is erased with `git reset --hard
+HEAD~1`, and if that commit is already on the remote the branch can only be
+repaired with a force push. Pushing after the decision means `origin/experiments`
+contains kept cycles only, and always fast-forwards.
 
 ## Rules
 
