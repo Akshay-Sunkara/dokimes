@@ -1,8 +1,10 @@
 """run the agent over the WebVoyager tasks, n times each!!"""
 
 import asyncio
+import collections
 import hashlib
 import json
+import random
 import re
 import sys
 import time
@@ -31,6 +33,37 @@ def load(site=None, path=None, level=None):
     if level:
         tasks = [t for t in tasks if t.get("level") == level]
     return tasks
+
+
+def sample(tasks, n, seed=0):
+    """Stratified random sample of n tasks, preserving the difficulty mix.
+
+    --n takes the head of the file, and the file is grouped by site: the first 20
+    train tasks are half easy and 14 of them come from four domains. A sweep on
+    that measures those four sites. Keep the seed fixed across variants — the
+    comparison only uses tasks both arms actually ran.
+    """
+    if n >= len(tasks):
+        return tasks
+
+    by_level = collections.defaultdict(list)
+    for task in tasks:
+        by_level[task.get("level") or "?"].append(task)
+
+    # largest remainder, so the quotas sum to exactly n
+    exact = {lvl: n * len(g) / len(tasks) for lvl, g in by_level.items()}
+    quota = {lvl: int(v) for lvl, v in exact.items()}
+    for lvl in sorted(by_level, key=lambda l: exact[l] - quota[l], reverse=True):
+        if sum(quota.values()) >= n:
+            break
+        quota[lvl] += 1
+
+    rng = random.Random(seed)
+    picked = []
+    for lvl in sorted(by_level):
+        picked += rng.sample(by_level[lvl], min(quota[lvl], len(by_level[lvl])))
+    rng.shuffle(picked)  # don't hand the sweep one difficulty at a time
+    return picked
 
 
 def task_file(name):

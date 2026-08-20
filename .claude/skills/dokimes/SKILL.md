@@ -35,10 +35,14 @@ Create `ledger.tsv` if absent (it is gitignored — it is your memory across cyc
 commit	variant	pass_rate	delta	ci_low	ci_high	status	description
 ```
 
-Establish the baseline before changing anything:
+Establish the baseline before changing anything. `--sample` draws a random,
+difficulty-stratified set; `--n` would take the head of the file, which is grouped
+by site and skews easy. Use whatever sample size the user asked for, and keep it
+and the seed identical for every cycle that follows:
 
 ```bash
-.venv/bin/python -m eval --variant base --tasks eval/train.jsonl --runs 3 > run.log 2>&1
+.venv/bin/python -m eval --variant base --tasks eval/train.jsonl \
+  --sample 20 --seed 0 --runs 3 > run.log 2>&1
 tail -40 run.log
 ```
 
@@ -65,29 +69,51 @@ For a cause worth understanding in depth, open one trace:
 .venv/bin/python -m eval.traces <run_id>     # step-by-step: code run, what it saw
 ```
 
-**2. Search the literature for how this failure has been solved.** You are not the
-first person to hit it — web agents are a heavily published area, and the good
-ideas are mostly already written down. Do this *before* inventing a fix.
+**2. Find out how this failure has already been solved.** You are not the first
+person to hit it. Do this *before* inventing a fix.
 
-Name the failure in the vocabulary of the field, then search arXiv:
+Search two sources, and prefer the second when they disagree.
+
+**Papers — for the mechanism.** Name the failure in the field's vocabulary, then:
 
 - WebSearch: `arxiv web agent <failure class> 2026` — e.g. "arxiv web agent
   recovery from failed action", "arxiv LLM agent long horizon memory",
   "arxiv web agent grounding element selection"
 - WebFetch `https://arxiv.org/abs/<id>` for the abstract, or
-  `https://arxiv.org/html/<id>` for full text when a paper looks directly on point
+  `https://arxiv.org/html/<id>` for full text when a paper is directly on point
 
-Read 2-4 abstracts, then the one paper closest to the failure. What you are after
-is the *mechanism* — a planning structure, a memory format, a verification step, a
-retry policy — not the benchmark numbers. Papers report gains under their own
-setup; that number tells you nothing about yours. The eval decides, not the paper.
+Read 2-4 abstracts, then the closest paper. Take the *mechanism* — a planning
+structure, a memory format, a verification step, a retry policy.
 
-Cite what you drew on in the ledger description (`arxiv:2504.01382 self-verify
-before done`) so a later cycle can tell which ideas came from where, and so a
-repeated failure does not send you back to the same paper twice.
+**Production code — for what survives contact with the real web.** Papers optimize
+for a benchmark; shipped agents handle CAPTCHAs, shadow DOM, iframes, lazy loading
+and anti-bot measures, and their repos record which ideas actually held up. Read
+how serious teams solved it:
+
+- `browser-use/browser-use` — the closest system to this one: a Python browser
+  agent with a code-execution tool. Its `browser_use/` source, `CLAUDE.md`, and
+  `examples/` are the highest-value reading for almost any failure here.
+- `browser-use/benchmark`, `OSU-NLP-Group/Online-Mind2Web` — the eval and judge
+  designs this harness already borrows from
+- `microsoft/playwright`, `Skyvern-AI/skyvern`, `web-arena-x/webarena`,
+  `openai/openai-agents-python`, `anthropics/anthropic-quickstarts`
+- WebSearch: `github <failure class> browser agent` to find others
+
+Read source and issues, not just READMEs — a closed issue describing the same
+symptom is often worth more than a paper. WebFetch works on
+`https://raw.githubusercontent.com/<owner>/<repo>/main/<path>` for a specific file.
+
+**Neither source decides anything.** A paper's reported gain and a company's design
+choice are both hypotheses about *their* setup, not evidence about yours. The eval
+decides. Never keep a change because a respected source endorsed it.
+
+Cite what you drew on in the ledger description — `arxiv:2504.01382 self-verify
+before done`, or `browser-use/browser-use dom serialization` — so a later cycle can
+see which ideas came from where, and a repeated failure does not send you back to
+the same source twice.
 
 If nothing relevant turns up in a few minutes, stop searching and reason from the
-traces. The literature is a source of hypotheses, not a prerequisite for a cycle.
+traces. This is a source of hypotheses, not a prerequisite for a cycle.
 
 **3. Make the change.** Only these files are in scope:
 
@@ -105,11 +131,14 @@ about to game the metric — pick a different change.
 git add -A && git commit -q -m "cycle N: <description>"
 ```
 
-**5. Sweep.** Always redirect — a sweep prints every step of every run and will
-bury your context:
+**5. Sweep.** Use the SAME `--sample` and `--seed` as the baseline in every cycle —
+the comparison only counts tasks both arms actually ran, so changing either one
+silently shrinks it. Always redirect; a sweep prints every step of every run and
+will bury your context:
 
 ```bash
-.venv/bin/python -m eval --variant <tag> --tasks eval/train.jsonl --runs 3 > run.log 2>&1
+.venv/bin/python -m eval --variant <tag> --tasks eval/train.jsonl \
+  --sample 20 --seed 0 --runs 3 > run.log 2>&1
 tail -40 run.log
 ```
 

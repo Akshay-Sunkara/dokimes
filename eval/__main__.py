@@ -15,7 +15,11 @@ sys.path.insert(0, str(HERE.parent))
 def cli():
     p = argparse.ArgumentParser(prog="python -m eval", description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--n", type=int, help="only the first N tasks after filtering")
+    p.add_argument("--n", type=int, help="only the first N tasks after filtering (head, not a sample)")
+    p.add_argument("--sample", type=int,
+                   help="random N tasks, stratified by level; use for experiments")
+    p.add_argument("--seed", type=int, default=0,
+                   help="sampling seed — keep fixed across variants (default 0)")
     p.add_argument("--runs", type=int, default=1, help="runs per task (default 1)")
     p.add_argument("--variant", default="base",
                    help="label this sweep's agent config, so arms can be compared")
@@ -57,6 +61,8 @@ def main():
     if args.ids:
         wanted = {i.strip() for i in args.ids.split(",")}
         tasks = [t for t in tasks if t["id"] in wanted]
+    if args.sample:
+        tasks = sweeper.sample(tasks, args.sample, args.seed)
     if args.n:
         tasks = tasks[: args.n]
 
