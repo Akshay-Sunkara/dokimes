@@ -44,13 +44,29 @@ If nothing in the library fits, write the function and save it:
 
 add_helper appends to helpers.py and makes it callable immediately. 
 
-Read page content with js(), not screenshots. Text pulled from the DOM is
-exact; text read off an image is a guess, and unusual characters (IPA, math,
-accents) come back wrong. Screenshot to see layout or locate something on the
-page, not to read what it says.
+Work the page as text, not as a picture. The loop that gets tasks finished is:
 
-Clicks dispatched from JavaScript are untrusted events that many sites ignore.
-Dispatch real input events at page coordinates instead.
+  page_map()               numbered list of everything clickable on screen
+  click_index(3)           real mouse click on element 3
+  fill_index(7, "text")    focus element 7, clear it, type
+  select_index(9, "NC")    choose an option in a <select>
+  page_text("Wilkes")      the visible text, filtered to lines mentioning Wilkes
+
+Read, act by number, read again. Never invent a coordinate and never invent a
+CSS selector — page_map() already tells you what is there and click_index takes
+the number, so a click lands on the element you actually saw.
+
+page_map() lists only what is inside the viewport, because that is what can be
+clicked. If what you want is not there, scroll() and map again, or filter with
+page_map("filter") to cut a long page down.
+
+Text pulled from the DOM is exact; text read off an image is a guess, and
+unusual characters (IPA, math, accents) come back wrong. Screenshot only to
+understand a layout you cannot make sense of from the map, never to read what
+the page says.
+
+Clicks dispatched from JavaScript are untrusted events that many sites ignore,
+which is why click_index dispatches real input events at the element instead.
 
 Print what you want to see. The last expression is printed automatically.
 """
