@@ -125,11 +125,16 @@ Everything under `eval/` is off limits and permission-denied. If a change seems 
 require editing the judge, the task set, or the report, that is a signal you are
 about to game the metric — pick a different change.
 
-**4. Commit before running**, so a crash still leaves a record:
+**4. Commit before running**, so a crash still leaves a record. Write the message
+as a sentence about what you just tried, in the voice described under *Writing*
+below:
 
 ```bash
-git add -A && git commit -q -m "cycle N: <description>"
+git add -A && git commit -q -m "i tried making the agent verify the page before it finishes"
 ```
+
+The result is not known yet, so the message says only what you attempted. You will
+amend it in step 8 once you know whether it worked.
 
 **5. Sweep.** Use the SAME `--sample` and `--seed` as the baseline in every cycle —
 the comparison only counts tasks both arms actually ran, so changing either one
@@ -164,7 +169,48 @@ then discard.
 Append the row to `ledger.tsv` either way. Discards are data — they stop you
 retrying the same idea in cycle 14.
 
-**Push only after deciding**, and only on a keep:
+**Write every cycle up in `experiments.md`** — keeps and discards both. This file
+is committed, so it is the record anyone reads on GitHub, and a failed experiment
+is worth as much there as a successful one. Append one entry, newest last:
+
+```markdown
+## cycle 3 — i taught the agent to check its work before finishing
+
+i kept seeing runs where the agent said it was done while the page still showed
+the unfiltered results, so i made it re-read the page and confirm every part of
+the task before it can finish.
+
+source: arxiv:2504.01382 — webjudge identifies the key points of a task and
+checks each one against the page, so i had the agent do the same to itself.
+result: +12.5% [+2.5%, +22.5%] — kept
+```
+
+Every entry needs a **source** line naming where the idea came from — an arXiv id
+or a repo and what you took from it — and one sentence on why it applied here. If
+an idea genuinely came from reading traces rather than a source, say that:
+`source: none — i got this from reading the traces on cycle 3`.
+
+**On a keep**, fold the write-up into the same commit and amend the message with
+the outcome:
+
+```bash
+git add -A
+git commit -q --amend -m "i tried making the agent verify the page before it finishes, and it worked"
+```
+
+**On a discard**, reset first so the code change is gone, *then* write the entry and
+commit it on its own. Order matters — `reset --hard` would throw away the write-up
+along with the change:
+
+```bash
+git reset --hard HEAD~1          # drops the change and its commit
+# now append the discard entry to experiments.md
+git add -A
+git commit -q -m "i tried giving the agent a scratchpad for long tasks, but it made no difference"
+```
+
+Either way the branch gains exactly one commit per cycle, and `experiments.md`
+records what happened. Then push:
 
 ```bash
 git push -u origin experiments
@@ -174,6 +220,24 @@ Never push before the decision. A discarded cycle is erased with `git reset --ha
 HEAD~1`, and if that commit is already on the remote the branch can only be
 repaired with a force push. Pushing after the decision means `origin/experiments`
 contains kept cycles only, and always fast-forwards.
+
+## Writing
+
+Everything you write as prose — commit messages, `experiments.md`, `ledger.tsv`
+descriptions, the summaries you print — follows the same voice:
+
+- **all lowercase.** never capitalise a sentence. code, identifiers, file paths and
+  arxiv ids keep whatever case they actually have — you are not lowercasing code.
+- **first person.** you ran the experiment, so say so: "i tried", "i noticed",
+  "i was wrong about". not "the agent was modified" and not "we".
+- **full sentences, but short.** a commit message is one sentence. an
+  `experiments.md` entry is two or three. say what you tried and why, then stop.
+- **plain and conversational.** "i kept seeing runs where the agent said it was
+  done while the page still showed old results" beats "addressed premature
+  termination in the completion path".
+- **honest about failures.** a discarded cycle is written up the same way: "i
+  thought giving it a scratchpad would help it keep track of long tasks, but it
+  made no difference."
 
 ## Rules
 
