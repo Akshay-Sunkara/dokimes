@@ -43,3 +43,24 @@ result: -3.3% [-10.0%, +0.0%] against cycle 1 — discarded. it used plan() and
 check() in 19 of the 30 runs, so it wasn't ignored; it just didn't convert.
 check() told the agent a filter was missing and the agent still couldn't apply
 it, which says the bottleneck is applying the filter, not noticing it failed.
+
+## cycle 3 — i made actions report what changed, and found typing was broken
+
+reading a thumbtack trace, the agent clicked the zip box, typed 10001, got no
+feedback, and every search it ran afterwards still used the default zip 76248.
+so i made click_index/fill_index/select_index wait for the page to settle and
+return the diff — new lines, new url, and for a fill, the value the field
+actually holds now.
+
+the read-back immediately caught a real bug. typing into a field that already
+had something in it did nothing at all: the clear step never landed, and the zip
+box has maxlength=5, so with "76248" already there every keystroke was silently
+dropped. focus + setSelectionRange + insert replaces the contents and works.
+
+source: browser-use/browser-use's tools/service.py, which reads the field back
+after typing and warns when the actual value differs from what was typed — that
+one line of theirs is what made the bug visible here.
+result: +6.7% [-10.0%, +23.3%] against cycle 1, 26.7% -> 33.3% — discarded, the
+ci spans zero. i think the typing fix in here is real and the change-reporting is
+what cost the steps, so i am going to try them separately rather than keep a
+bundle the eval cannot resolve.
