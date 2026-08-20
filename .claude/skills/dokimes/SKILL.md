@@ -40,11 +40,18 @@ difficulty-stratified set; `--n` would take the head of the file, which is group
 by site and skews easy. Use whatever sample size the user asked for, and keep it
 and the seed identical for every cycle that follows:
 
+`parallel.py` runs the sweep across several chrome instances at once and judges at
+the end; `--shards` is how many. It takes the same flags as `python -m eval`, so use
+it for every sweep — a one-browser sweep takes about `--shards` times as long.
+
 ```bash
-.venv/bin/python -m eval --variant base --tasks eval/train.jsonl \
-  --sample 20 --seed 0 --runs 3 > run.log 2>&1
+.venv/bin/python parallel.py --variant base --tasks eval/train.jsonl \
+  --sample 20 --seed 0 --runs 3 --shards 3 --fresh > run.log 2>&1
 tail -40 run.log
 ```
+
+`--fresh` belongs on this sweep and no other. It clears `results.jsonl`, and every
+cycle after this one compares itself against the base rows sitting in that file.
 
 ## Each cycle
 
@@ -142,10 +149,14 @@ silently shrinks it. Always redirect; a sweep prints every step of every run and
 will bury your context:
 
 ```bash
-.venv/bin/python -m eval --variant <tag> --tasks eval/train.jsonl \
-  --sample 20 --seed 0 --runs 3 > run.log 2>&1
+.venv/bin/python parallel.py --variant <tag> --tasks eval/train.jsonl \
+  --sample 20 --seed 0 --runs 3 --shards 3 > run.log 2>&1
 tail -40 run.log
 ```
+
+Never pass `--fresh` here — it would delete the base rows and leave the comparison
+with nothing to pair against. Per-shard output lands in `sweeps/<tag>/`, which is
+where you read a crash; `run.log` only carries the progress table and the scoreboard.
 
 **6. Read the verdict.** The scoreboard prints the comparison:
 
@@ -158,6 +169,17 @@ tail -40 run.log
 `harness errors N` line in the scoreboard. If it rose above baseline, the change
 broke the agent even if the pass rate looks fine. Rework it (max 2 attempts),
 then discard.
+
+Check that every shard survived too:
+
+```bash
+grep "shards aborted" run.log
+```
+
+A shard whose chrome dies mid-sweep is aborted and its rows are dropped, so that
+arm ran on fewer tasks than the baseline did. The delta is not comparable — re-run
+the sweep rather than reading it. The traces are still in `eval/traces/` if you
+want to see what killed it.
 
 **8. Keep or discard.**
 

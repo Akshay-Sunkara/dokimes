@@ -93,15 +93,41 @@ def launch_chrome(binary, profile, port, headless, index):
     return subprocess.Popen(argv, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
+def cdp_version(port, timeout=2):
+    try:
+        with urllib.request.urlopen(f"http://127.0.0.1:{port}/json/version", timeout=timeout) as r:
+            return json.loads(r.read())
+    except (urllib.error.URLError, OSError, ValueError):
+        return None
+
+
 def wait_cdp(port, timeout=45):
     deadline = time.time() + timeout
     while time.time() < deadline:
-        try:
-            with urllib.request.urlopen(f"http://127.0.0.1:{port}/json/version", timeout=2) as r:
-                return json.loads(r.read())["webSocketDebuggerUrl"]
-        except (urllib.error.URLError, OSError, ValueError, KeyError):
-            time.sleep(0.4)
+        info = cdp_version(port)
+        if info and info.get("webSocketDebuggerUrl"):
+            return info["webSocketDebuggerUrl"]
+        time.sleep(0.4)
     return None
+
+
+def cdp_alive(port):
+    """chrome can die mid-sweep; the shard keeps running and scores every task zero."""
+    return cdp_version(port, timeout=3) is not None
+
+
+def bar(done_n, total_n, width=16):
+    filled = round(width * done_n / total_n) if total_n else 0
+    return "\u2588" * filled + "\u2591" * (width - filled)
+
+
+def progress(elapsed_m, rows):
+    head = f"[{elapsed_m:5.1f}m]"
+    pad = " " * len(head)
+    for n, (i, fin, tot, state) in enumerate(rows):
+        pct = 100 * fin / tot if tot else 0
+        print(f"{head if n == 0 else pad}  s{i} {bar(fin, tot)} {fin:>3}/{tot:<3} {pct:3.0f}%  {state}",
+              flush=True)
 
 
 def shard_env(index, port, runtime):
@@ -133,7 +159,7 @@ def start_shard(work, tasks, args, env, log):
     return proc
 
 
-def merge(work, index):
+def merge(work, index, scored=True):
     src = work / "eval" / "results.jsonl"
     if not src.exists():
         return 0
@@ -165,9 +191,10 @@ def merge(work, index):
         row["shots"] = [s.replace(str(old_dir), str(new_dir)) for s in row.get("shots") or []]
         merged.append(row)
 
-    with RESULTS.open("a") as f:
-        for row in merged:
-            f.write(json.dumps(row) + "\n")
+    if scored:
+        with RESULTS.open("a") as f:
+            for row in merged:
+                f.write(json.dumps(row) + "\n")
     return len(merged)
 
 
@@ -208,7 +235,7 @@ def cli():
     p.add_argument("--sample", type=int, help="stratified random N tasks")
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--runs", type=int, default=2)
-    p.add_argument("--shards", type=int, default=5, help="parallel chrome instances")
+    p.add_argument("--shards", type=int, default=3, help="parallel chrome instances")
     p.add_argument("--level", choices=("easy", "medium", "hard"))
     p.add_argument("--site")
     p.add_argument("--timeout", type=int, help="per-run timeout in seconds")
@@ -273,22 +300,48 @@ def main():
             print(f"  shard {i} up on port {port}  -> {log.relative_to(REPO)}")
 
         print(f"\nrunning {len(shards)} shards, tailing progress every 60s")
-        done = set()
+        done, aborted, misses = set(), set(), {}
         while len(done) < len(shards):
             time.sleep(60)
-            line = []
+            rows = []
             for i, proc in enumerate(shards, 1):
                 log = logs / f"shard{i}.log"
                 text = log.read_text(errors="ignore") if log.exists() else ""
                 finished = text.count("\n-> ")
-                line.append(f"s{i} {finished}/{len(groups[i - 1]) * args.runs}")
+                total_i = len(groups[i - 1]) * args.runs
+
                 if proc.poll() is not None:
                     done.add(i)
-            print(f"  [{(time.time() - started) / 60:5.1f}m] " + "  ".join(line), flush=True)
+                    state = "aborted" if i in aborted else "done"
+                elif cdp_alive(args.base_port + i):
+                    misses[i] = 0
+                    state = "ok"
+                else:
+                    # one miss can be a hiccup; two in a row means chrome is gone
+                    misses[i] = misses.get(i, 0) + 1
+                    if misses[i] < 2:
+                        state = "no cdp -- rechecking"
+                    else:
+                        aborted.add(i)
+                        done.add(i)
+                        stop(proc, f"shard {i}")
+                        state = "browser gone -- aborted"
+                rows.append((i, finished, total_i, state))
+            progress((time.time() - started) / 60, rows)
 
         print("\nmerging shard results")
         for i, work in enumerate(works, 1):
-            print(f"  shard {i}: {merge(work, i)} rows")
+            scored = i not in aborted
+            n = merge(work, i, scored=scored)
+            if scored:
+                print(f"  shard {i}: {n} rows")
+            else:
+                print(f"  shard {i}: {n} rows dropped, traces kept -- browser died mid-sweep")
+
+        if aborted:
+            names = ", ".join(f"s{i}" for i in sorted(aborted))
+            print(f"\nwarning: {len(aborted)} of {len(shards)} shards aborted ({names}). "
+                  f"this sweep is incomplete -- do not compare its pass rate against a full run")
 
     finally:
         print("\ncleaning up")
