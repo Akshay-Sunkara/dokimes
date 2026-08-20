@@ -119,3 +119,20 @@ every action with its own page_map() call, so folding the observation into the
 action gave it something it was already going and getting. the thing i actually
 wanted to fix — it stops before confirming the effect — is not an observation
 problem, it is a stopping problem.
+
+## cycle 7 — i gave the agent a clock and told it not to stop early
+
+cycle 6 said the problem was not that the agent could not see what changed, so i
+went at the stopping itself: a time_left() helper, and a section of the prompt
+that says a sort control clicked is not a list sorted, that it should go back and
+read each requirement off the page before calling the task done, and that a short
+honest "i could not do this part" beats a confident summary of something that did
+not happen.
+
+source: none — this came from the sonnet traces, where run after run stopped at
+around 30 steps and 100 seconds of a 300 second budget.
+result: +3.3% [-10.0%, +16.7%] against cycle 5 — discarded. it did move the run
+longer, 101s to 122s median, and timeouts stayed flat at 3, so the agent did
+spend more of its budget; it just did not convert that into more tasks passed.
+telling it to check more is apparently not the same as it checking the right
+thing.
