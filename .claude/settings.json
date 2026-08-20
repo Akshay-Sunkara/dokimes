@@ -26,7 +26,18 @@
       "Bash(.venv/bin/python -m eval.report:*)",
       "Bash(git diff:*)",
       "Bash(git status:*)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "Bash(git log:*)",
+      "Bash(git rev-parse:*)",
+      "Bash(git branch:*)",
+      "Bash(git checkout experiments)",
+      "Bash(git checkout -b experiments)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git reset --hard HEAD~1)",
+      "Bash(git push -u origin experiments)",
+      "Bash(git push origin experiments)",
+      "Bash(tail:*)"
     ]
   }
 }
